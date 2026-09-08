@@ -95,7 +95,7 @@ export default function DuitkuDashboard() {
       const newMap: { [key: string]: string } = {}
       txData.forEach((item: any) => {
         if (item.user_id) {
-          newMap[item.user_id] = item.user_id === user?.id ? (user?.email || item.user_id) : `User (${item.user_id.slice(0, 6)}...)`
+          newMap[item.user_id] = item.user_id === user?.id ? (user.email || item.user_id) : `User (${item.user_id.slice(0, 6)}...)`
         }
       })
       setUserMap(newMap)
@@ -152,7 +152,7 @@ export default function DuitkuDashboard() {
       target_amount: parseFloat(newPocketTarget.replace(/\./g, '')),
       current_amount: 0,
       user_id: user?.id ?? ''
-    }] as any)
+    }])
     setNewPocketTitle('')
     setNewPocketTarget('')
     fetchData()
@@ -171,7 +171,7 @@ export default function DuitkuDashboard() {
       title: newWishTitle,
       price: parseFloat(newWishPrice.replace(/\./g, '')),
       user_id: user?.id ?? ''
-    }] as any)
+    }])
     setNewWishTitle('')
     setNewWishPrice('')
     fetchData()
@@ -190,7 +190,7 @@ export default function DuitkuDashboard() {
       category: newBudgetCat,
       limit_amount: parseFloat(newBudgetLimit.replace(/\./g, '')),
       user_id: user?.id ?? ''
-    }] as any)
+    }])
     setNewBudgetLimit('')
     fetchData()
   }
@@ -287,22 +287,26 @@ export default function DuitkuDashboard() {
         </div>
       </aside>
 
-      {/* BOTTOM NAVIGATION (Mobile Only) */}
+      {/* BOTTOM NAVIGATION (Mobile Only - Lengkap dengan Tombol Logout) */}
       <div className={`md:hidden flex items-center justify-around border-t p-2 fixed bottom-0 left-0 right-0 z-30 ${bgSidebar}`}>
-        <button onClick={() => setActiveTab('dashboard')} className={`p-2 flex flex-col items-center text-[10px] ${activeTab === 'dashboard' ? 'text-lime-500 font-bold' : textMuted}`}>
-          <LayoutDashboard size={20} /> <span>Dashboard</span>
+        <button onClick={() => setActiveTab('dashboard')} className={`p-1.5 flex flex-col items-center text-[10px] ${activeTab === 'dashboard' ? 'text-lime-500 font-bold' : textMuted}`}>
+          <LayoutDashboard size={18} /> <span>Dashboard</span>
         </button>
-        <button onClick={() => setActiveTab('analitik')} className={`p-2 flex flex-col items-center text-[10px] ${activeTab === 'analitik' ? 'text-lime-500 font-bold' : textMuted}`}>
-          <BarChart3 size={20} /> <span>Analitik</span>
+        <button onClick={() => setActiveTab('analitik')} className={`p-1.5 flex flex-col items-center text-[10px] ${activeTab === 'analitik' ? 'text-lime-500 font-bold' : textMuted}`}>
+          <BarChart3 size={18} /> <span>Analitik</span>
         </button>
         <button onClick={() => setIsModalOpen(true)} className="bg-lime-400 text-zinc-950 p-3 rounded-full shadow-lg -mt-4">
           <Plus size={22} />
         </button>
-        <button onClick={() => setActiveTab('report')} className={`p-2 flex flex-col items-center text-[10px] ${activeTab === 'report' ? 'text-lime-500 font-bold' : textMuted}`}>
-          <FileText size={20} /> <span>Report</span>
+        <button onClick={() => setActiveTab('report')} className={`p-1.5 flex flex-col items-center text-[10px] ${activeTab === 'report' ? 'text-lime-500 font-bold' : textMuted}`}>
+          <FileText size={18} /> <span>Report</span>
         </button>
-        <button onClick={() => setActiveTab('settings')} className={`p-2 flex flex-col items-center text-[10px] ${activeTab === 'settings' ? 'text-lime-500 font-bold' : textMuted}`}>
-          <Settings size={20} /> <span>Settings</span>
+        <button onClick={() => setActiveTab('settings')} className={`p-1.5 flex flex-col items-center text-[10px] ${activeTab === 'settings' ? 'text-lime-500 font-bold' : textMuted}`}>
+          <Settings size={18} /> <span>Settings</span>
+        </button>
+        {/* Tombol Logout Khusus Mobile */}
+        <button onClick={handleLogout} className="p-1.5 flex flex-col items-center text-[10px] text-rose-500 font-medium">
+          <LogOut size={18} /> <span>Keluar</span>
         </button>
       </div>
 
@@ -612,6 +616,16 @@ export default function DuitkuDashboard() {
                   <button onClick={() => setTheme('light')} className={`px-4 py-2 rounded-xl border ${theme === 'light' ? 'bg-white text-zinc-900 font-bold shadow' : textMuted}`}>Light Mode</button>
                 </div>
               </div>
+
+              {/* Tombol Logout di Menu Pengaturan */}
+              <div className={`border rounded-2xl p-6 space-y-4 ${bgCard}`}>
+                <h3 className="text-sm font-bold text-rose-500 flex items-center gap-2"><LogOut size={16} /> Keluar dari Akun</h3>
+                <p className={`text-xs ${textMuted}`}>Akhiri sesi login aktif di perangkat ini.</p>
+                <button onClick={handleLogout} className="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-500 font-semibold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer flex items-center gap-2">
+                  <LogOut size={14} /> Keluar Akun Sekarang
+                </button>
+              </div>
+
               <div className="border border-rose-500/30 rounded-2xl p-6 bg-rose-500/5 space-y-3">
                 <h3 className="text-sm font-bold text-rose-500">Zona Manajemen Data Bersama</h3>
                 <button onClick={handleResetData} className="w-full md:w-auto bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-500 font-semibold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer">Hapus & Reset Semua Data Transaksi</button>
