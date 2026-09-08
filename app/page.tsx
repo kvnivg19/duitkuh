@@ -95,7 +95,7 @@ export default function DuitkuDashboard() {
       const newMap: { [key: string]: string } = {}
       txData.forEach((item: any) => {
         if (item.user_id) {
-          newMap[item.user_id] = item.user_id === user?.id ? (user.email || item.user_id) : `User (${item.user_id.slice(0, 6)}...)`
+          newMap[item.user_id] = item.user_id === user?.id ? (user?.email || item.user_id) : `User (${item.user_id.slice(0, 6)}...)`
         }
       })
       setUserMap(newMap)
@@ -152,7 +152,7 @@ export default function DuitkuDashboard() {
       target_amount: parseFloat(newPocketTarget.replace(/\./g, '')),
       current_amount: 0,
       user_id: user?.id ?? ''
-    }])
+    }] as any)
     setNewPocketTitle('')
     setNewPocketTarget('')
     fetchData()
@@ -171,7 +171,7 @@ export default function DuitkuDashboard() {
       title: newWishTitle,
       price: parseFloat(newWishPrice.replace(/\./g, '')),
       user_id: user?.id ?? ''
-    }])
+    }] as any)
     setNewWishTitle('')
     setNewWishPrice('')
     fetchData()
@@ -190,7 +190,7 @@ export default function DuitkuDashboard() {
       category: newBudgetCat,
       limit_amount: parseFloat(newBudgetLimit.replace(/\./g, '')),
       user_id: user?.id ?? ''
-    }])
+    }] as any)
     setNewBudgetLimit('')
     fetchData()
   }
