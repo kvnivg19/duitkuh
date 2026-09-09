@@ -298,14 +298,6 @@ export default function DuitkuDashboard() {
         <button onClick={() => setActiveTab('settings')} className={`p-1 flex flex-col items-center text-[10px] ${activeTab === 'settings' ? 'text-lime-500 font-bold' : textMuted}`}>
           <Settings size={16} /> <span>Set</span>
         </button>
-        <button 
-          onClick={() => {
-            if (confirm('Yakin mau keluar dari akun?')) handleLogout()
-          }} 
-          className="p-1 flex flex-col items-center text-[10px] text-amber-500 font-medium"
-        >
-          <LogOut size={16} /> <span>Keluar</span>
-        </button>
       </div>
 
       {/* KONTEN UTAMA */}
