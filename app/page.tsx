@@ -67,7 +67,8 @@ export default function DuitkuDashboard() {
       const newMap: { [key: string]: string } = {}
       txData.forEach((item: any) => {
         if (item.user_id) {
-          newMap[item.user_id] = item.user_id === user?.id ? (user.email || item.user_id) : `User (${item.user_id.slice(0, 6)}...)`
+          const isCurrentUser = !!user && item.user_id === user.id
+          newMap[item.user_id] = isCurrentUser ? (user.email || item.user_id) : `User (${item.user_id.slice(0, 6)}...)`
         }
       })
       setUserMap(newMap)
@@ -130,7 +131,7 @@ export default function DuitkuDashboard() {
     e.preventDefault()
     if (!newPocketTitle || !newPocketTarget) return
     const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from('pockets').insert([{
+    await (supabase.from('pockets') as any).insert([{
       title: newPocketTitle,
       target_amount: parseFloat(newPocketTarget.replace(/\./g, '')),
       current_amount: 0,
@@ -150,7 +151,7 @@ export default function DuitkuDashboard() {
     e.preventDefault()
     if (!newWishTitle || !newWishPrice) return
     const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from('wishlists').insert([{
+    await (supabase.from('wishlists') as any).insert([{
       title: newWishTitle,
       price: parseFloat(newWishPrice.replace(/\./g, '')),
       user_id: user?.id ?? ''
@@ -169,7 +170,7 @@ export default function DuitkuDashboard() {
     e.preventDefault()
     if (!newBudgetLimit) return
     const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from('budgets').insert([{
+    await (supabase.from('budgets') as any).insert([{
       category: newBudgetCat,
       limit_amount: parseFloat(newBudgetLimit.replace(/\./g, '')),
       user_id: user?.id ?? ''

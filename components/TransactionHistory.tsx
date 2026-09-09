@@ -36,17 +36,6 @@ export default function TransactionHistory() {
     }
   }
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return '-'
-    const date = new Date(dateString)
-    if (isNaN(date.getTime())) return dateString
-    return date.toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    })
-  }
-
   const filteredTransactions = transactions.filter(item => {
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           item.category.toLowerCase().includes(searchQuery.toLowerCase())
@@ -59,7 +48,7 @@ export default function TransactionHistory() {
       <div className="bg-[#121214] border border-zinc-800/80 rounded-2xl p-4 md:p-6 text-zinc-100">
         <div className="mb-6">
           <h2 className="text-base md:text-lg font-bold">Riwayat Bersama Duitku 📜</h2>
-          <p className="text-xs text-zinc-400 mt-0.5">Semua pemasukan & pengeluaran dari user yang terekam di sini.</p>
+          <p className="text-xs text-zinc-400 mt-0.5">Semua pemasukan & pengeluaran dari user yang terhubung terekam di sini.</p>
         </div>
 
         <div className="flex flex-col md:flex-row items-center gap-3 mb-6 text-xs">
@@ -98,7 +87,7 @@ export default function TransactionHistory() {
                     <h4 className="font-semibold text-sm text-zinc-200">{item.title}</h4>
                     <div className="flex flex-wrap items-center gap-2 text-[11px] text-zinc-400 mt-0.5">
                       <span className="bg-zinc-800 px-2 py-0.5 rounded text-zinc-300">{item.category}</span>
-                      <span>• {formatDate(item.date)}</span>
+                      <span>• {item.date}</span>
                       <span className="flex items-center gap-1 text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded font-mono">
                         <User size={10} /> {item.user_id === currentUser?.id ? 'Anda' : 'Partner'}
                       </span>
