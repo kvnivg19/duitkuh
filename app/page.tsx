@@ -240,7 +240,7 @@ export default function DuitkuDashboard() {
         <div>
           <div className="flex items-center gap-2 px-2 mb-8">
             <div className="bg-lime-400 text-zinc-950 font-black px-2.5 py-1 rounded-lg text-lg tracking-wider">
-              Duitku
+              Mayiv Tracker
             </div>
           </div>
 

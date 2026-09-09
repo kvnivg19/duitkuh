@@ -42,7 +42,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-[#121214] border border-zinc-800 rounded-2xl p-8 shadow-2xl space-y-6">
         <div className="text-center space-y-2">
           <div className="inline-flex items-center gap-2 bg-lime-400/10 border border-lime-400/20 px-3 py-1 rounded-full text-lime-400 text-xs font-semibold">
-            <Flame size={14} /> Duitku Financial Tracker
+            <Flame size={14} /> Ivan May Tracker
           </div>
           <h1 className="text-2xl font-black tracking-tight text-zinc-100">
             {isSignUp ? 'Buat Akun Baru ✨' : 'Selamat Datang Kembali 👋'}
