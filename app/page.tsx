@@ -306,7 +306,7 @@ export default function DuitkuDashboard() {
           <div className="flex items-center gap-2">
             <div className={`text-[11px] md:text-xs px-3 py-1 rounded-full text-lime-500 font-medium flex items-center gap-1.5 border truncate max-w-[200px] md:max-w-none ${isLight ? 'bg-zinc-100 border-zinc-300' : 'bg-zinc-800/60 border-zinc-700/50'}`}>
               <Flame size={14} className="text-lime-500 shrink-0" />
-              <span className="truncate">Shared Financial Database</span>
+              <span className="truncate">Ivan May Tracker</span>
             </div>
           </div>
 
