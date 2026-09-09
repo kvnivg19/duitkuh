@@ -13,19 +13,16 @@ import {
   Plus, 
   Search, 
   Flame, 
-  Trash2,
-  Database,
-  User,
-  ShieldCheck,
-  LogOut,
-  Mail,
-  CheckCircle2,
-  FileText,
-  Filter,
-  Sun,
-  Moon,
-  Target,
-  Brain
+  Trash2, 
+  LogOut, 
+  FileText, 
+  Sun, 
+  Moon, 
+  Target, 
+  Brain,
+  ArrowDownLeft,
+  ArrowUpRight,
+  ShieldCheck
 } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import TransactionModal from '@/components/TransactionModal'
@@ -33,61 +30,37 @@ import TransactionHistory from '@/components/TransactionHistory'
 
 export const dynamic = 'force-dynamic'
 
-interface Pocket {
-  id: string
-  title: string
-  target_amount: number
-  current_amount: number
-  user_id?: string
-}
-
-interface Wishlist {
-  id: string
-  title: string
-  price: number
-  user_id?: string
-}
-
-interface Budget {
-  id: string
-  category: string
-  limit_amount: number
-  user_id?: string
-}
-
 export default function DuitkuDashboard() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'analitik' | 'report' | 'kantong' | 'wishlist' | 'budgeting' | 'settings'>('analitik')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'analitik' | 'report' | 'kantong' | 'wishlist' | 'budgeting' | 'settings'>('dashboard')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [transactions, setTransactions] = useState<any[]>([])
   const [totalIncome, setTotalIncome] = useState(0)
   const [totalExpense, setTotalExpense] = useState(0)
-  const [dbStatus, setDbStatus] = useState('Terhubung Aman')
-  const [userEmail, setUserEmail] = useState<string>('Memuat akun...')
   const [userMap, setUserMap] = useState<{ [key: string]: string }>({})
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
 
-  const [pockets, setPockets] = useState<Pocket[]>([])
-  const [wishlists, setWishlists] = useState<Wishlist[]>([])
-  const [budgets, setBudgets] = useState<Budget[]>([])
+  // Setting Batas Aman Pengeluaran
+  const [expenseLimit, setExpenseLimit] = useState<number>(2000000)
+  const [inputLimit, setInputLimit] = useState('2.000.000')
+
+  const [pockets, setPockets] = useState<any[]>([])
+  const [wishlists, setWishlists] = useState<any[]>([])
+  const [budgets, setBudgets] = useState<any[]>([])
 
   const [newPocketTitle, setNewPocketTitle] = useState('')
   const [newPocketTarget, setNewPocketTarget] = useState('')
   const [newWishTitle, setNewWishTitle] = useState('')
   const [newWishPrice, setNewWishPrice] = useState('')
-  const [newBudgetCat, setNewBudgetCat] = useState('Kuliner / Gofood')
+  const [newBudgetCat, setNewBudgetCat] = useState('Kuliner / Lainnya')
   const [newBudgetLimit, setNewBudgetLimit] = useState('')
 
   const [selectedUserFilter, setSelectedUserFilter] = useState('all')
   const [reportSearch, setReportSearch] = useState('')
-  const [reportTypeFilter, setReportTypeFilter] = useState<'all' | 'income' | 'expense'>('all')
 
   const router = useRouter()
 
   const fetchData = async () => {
     const { data: { user } } = await supabase.auth.getUser()
-    if (user && user.email) {
-      setUserEmail(user.email)
-    }
 
     const { data: txData } = await supabase.from('transactions').select('*').order('date', { ascending: false })
     if (txData) {
@@ -95,7 +68,7 @@ export default function DuitkuDashboard() {
       const newMap: { [key: string]: string } = {}
       txData.forEach((item: any) => {
         if (item.user_id) {
-          newMap[item.user_id] = item.user_id === user?.id ? (user.email || item.user_id) : `User (${item.user_id.slice(0, 6)}...)`
+          newMap[item.user_id] = item.user_id === user?.id ? (user?.email || item.user_id) : `User (${item.user_id.slice(0, 6)}...)`
         }
       })
       setUserMap(newMap)
@@ -119,7 +92,12 @@ export default function DuitkuDashboard() {
     const { data: bData } = await supabase.from('budgets').select('*')
     if (bData) setBudgets(bData)
 
-    setDbStatus('Terhubung Aktif (Supabase)')
+    // Load saved limit
+    const savedLimit = localStorage.getItem('duitku_limit')
+    if (savedLimit) {
+      setExpenseLimit(Number(savedLimit))
+      setInputLimit(Number(savedLimit).toLocaleString('id-ID'))
+    }
   }
 
   useEffect(() => {
@@ -127,7 +105,6 @@ export default function DuitkuDashboard() {
   }, [])
 
   const handleSuccess = () => {
-    alert('Transaksi berhasil disimpan! 🚀')
     fetchData()
   }
 
@@ -135,6 +112,14 @@ export default function DuitkuDashboard() {
     await supabase.auth.signOut()
     document.cookie = "sb-auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
     router.push('/login')
+  }
+
+  const handleSaveLimit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const clean = parseFloat(inputLimit.replace(/\./g, ''))
+    setExpenseLimit(clean)
+    localStorage.setItem('duitku_limit', clean.toString())
+    alert('Batas aman pengeluaran berhasil diperbarui!')
   }
 
   const handleResetData = async () => {
@@ -147,7 +132,7 @@ export default function DuitkuDashboard() {
     e.preventDefault()
     if (!newPocketTitle || !newPocketTarget) return
     const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from('pockets').insert([{
+    await (supabase.from('pockets') as any).insert([{
       title: newPocketTitle,
       target_amount: parseFloat(newPocketTarget.replace(/\./g, '')),
       current_amount: 0,
@@ -167,7 +152,7 @@ export default function DuitkuDashboard() {
     e.preventDefault()
     if (!newWishTitle || !newWishPrice) return
     const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from('wishlists').insert([{
+    await (supabase.from('wishlists') as any).insert([{
       title: newWishTitle,
       price: parseFloat(newWishPrice.replace(/\./g, '')),
       user_id: user?.id ?? ''
@@ -186,7 +171,7 @@ export default function DuitkuDashboard() {
     e.preventDefault()
     if (!newBudgetLimit) return
     const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from('budgets').insert([{
+    await (supabase.from('budgets') as any).insert([{
       category: newBudgetCat,
       limit_amount: parseFloat(newBudgetLimit.replace(/\./g, '')),
       user_id: user?.id ?? ''
@@ -202,11 +187,14 @@ export default function DuitkuDashboard() {
 
   const netBalance = totalIncome - totalExpense
 
-  const categoryTotals: { [key: string]: number } = {}
+  // Cari pengeluaran paling tinggi (highest single expense item)
+  let highestExpenseItem = { title: 'Belum ada data', amount: 0, date: '-' }
   transactions.filter(item => item.type === 'expense').forEach(item => {
-    categoryTotals[item.category] = (categoryTotals[item.category] || 0) + Number(item.amount)
+    const amt = Number(item.amount)
+    if (amt > highestExpenseItem.amount) {
+      highestExpenseItem = { title: item.title, amount: amt, date: item.date }
+    }
   })
-  const sortedCategories = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])
 
   const moodTotals: { [key: string]: { count: number, total: number } } = {}
   transactions.filter(item => item.type === 'expense').forEach(item => {
@@ -222,9 +210,8 @@ export default function DuitkuDashboard() {
   const uniqueUsers = Array.from(new Set(transactions.map(item => item.user_id)))
   const filteredReportData = transactions.filter(item => {
     const matchesSearch = item.title.toLowerCase().includes(reportSearch.toLowerCase()) || item.category.toLowerCase().includes(reportSearch.toLowerCase())
-    const matchesType = reportTypeFilter === 'all' || item.type === reportTypeFilter
     const matchesUser = selectedUserFilter === 'all' || item.user_id === selectedUserFilter
-    return matchesSearch && matchesType && matchesUser
+    return matchesSearch && matchesUser
   })
 
   const isLight = theme === 'light'
@@ -240,7 +227,7 @@ export default function DuitkuDashboard() {
     <div className={`flex flex-col md:flex-row h-screen font-sans overflow-hidden transition-colors duration-300 ${bgMain}`}>
       
       {/* SIDEBAR (Desktop Only) */}
-      <aside className={`w-64 border-r flex-col justify-between p-4 hidden md:flex ${bgSidebar}`}>
+      <aside className={`w-64 border-r flex-col justify-between p-4 hidden md:flex shrink-0 ${bgSidebar}`}>
         <div>
           <div className="flex items-center gap-2 px-2 mb-8">
             <div className="bg-lime-400 text-zinc-950 font-black px-2.5 py-1 rounded-lg text-lg tracking-wider">
@@ -248,7 +235,7 @@ export default function DuitkuDashboard() {
             </div>
           </div>
 
-          <button onClick={() => setIsModalOpen(true)} className="w-full bg-lime-400 hover:bg-lime-300 text-zinc-950 font-semibold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 mb-6 transition-all shadow-lg shadow-lime-400/10 cursor-pointer">
+          <button onClick={() => setIsModalOpen(true)} className="w-full bg-lime-400 hover:bg-lime-300 text-zinc-950 font-semibold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 mb-6 transition-all shadow-lg cursor-pointer">
             <Plus size={18} /> <span>Catat Cepat</span>
           </button>
 
@@ -287,34 +274,33 @@ export default function DuitkuDashboard() {
         </div>
       </aside>
 
-      {/* BOTTOM NAVIGATION (Mobile Only - Lengkap dengan Tombol Logout) */}
-      <div className={`md:hidden flex items-center justify-around border-t p-2 fixed bottom-0 left-0 right-0 z-30 ${bgSidebar}`}>
-        <button onClick={() => setActiveTab('dashboard')} className={`p-1.5 flex flex-col items-center text-[10px] ${activeTab === 'dashboard' ? 'text-lime-500 font-bold' : textMuted}`}>
-          <LayoutDashboard size={18} /> <span>Dashboard</span>
+      {/* BOTTOM NAVIGATION (Mobile Only) */}
+      <div className={`md:hidden flex items-center justify-around border-t py-2 px-1 fixed bottom-0 left-0 right-0 z-30 shadow-2xl ${bgSidebar}`}>
+        <button onClick={() => setActiveTab('dashboard')} className={`p-1 flex flex-col items-center text-[10px] ${activeTab === 'dashboard' ? 'text-lime-500 font-bold' : textMuted}`}>
+          <LayoutDashboard size={16} /> <span>Home</span>
         </button>
-        <button onClick={() => setActiveTab('analitik')} className={`p-1.5 flex flex-col items-center text-[10px] ${activeTab === 'analitik' ? 'text-lime-500 font-bold' : textMuted}`}>
-          <BarChart3 size={18} /> <span>Analitik</span>
+        <button onClick={() => setActiveTab('analitik')} className={`p-1 flex flex-col items-center text-[10px] ${activeTab === 'analitik' ? 'text-lime-500 font-bold' : textMuted}`}>
+          <BarChart3 size={16} /> <span>Analitik</span>
         </button>
-        <button onClick={() => setIsModalOpen(true)} className="bg-lime-400 text-zinc-950 p-3 rounded-full shadow-lg -mt-4">
-          <Plus size={22} />
+        <button onClick={() => setIsModalOpen(true)} className="bg-lime-400 text-zinc-950 p-2.5 rounded-full shadow-lg -mt-4 cursor-pointer">
+          <Plus size={20} />
         </button>
-        <button onClick={() => setActiveTab('report')} className={`p-1.5 flex flex-col items-center text-[10px] ${activeTab === 'report' ? 'text-lime-500 font-bold' : textMuted}`}>
-          <FileText size={18} /> <span>Report</span>
+        <button onClick={() => setActiveTab('report')} className={`p-1 flex flex-col items-center text-[10px] ${activeTab === 'report' ? 'text-lime-500 font-bold' : textMuted}`}>
+          <FileText size={16} /> <span>Report</span>
         </button>
-        <button onClick={() => setActiveTab('settings')} className={`p-1.5 flex flex-col items-center text-[10px] ${activeTab === 'settings' ? 'text-lime-500 font-bold' : textMuted}`}>
-          <Settings size={18} /> <span>Settings</span>
+        <button onClick={() => setActiveTab('settings')} className={`p-1 flex flex-col items-center text-[10px] ${activeTab === 'settings' ? 'text-lime-500 font-bold' : textMuted}`}>
+          <Settings size={16} /> <span>Set</span>
         </button>
-        {/* Tombol Logout Khusus Mobile */}
-        <button onClick={handleLogout} className="p-1.5 flex flex-col items-center text-[10px] text-rose-500 font-medium">
-          <LogOut size={18} /> <span>Keluar</span>
+        <button onClick={handleLogout} className="p-1 flex flex-col items-center text-[10px] text-rose-500 font-medium">
+          <LogOut size={16} /> <span>Keluar</span>
         </button>
       </div>
 
       {/* KONTEN UTAMA */}
-      <main className="flex-1 flex flex-col overflow-y-auto pb-20 md:pb-0">
+      <main className="flex-1 flex flex-col overflow-y-auto pb-24 md:pb-0">
         <header className={`h-16 border-b backdrop-blur-md px-4 md:px-6 flex items-center justify-between sticky top-0 z-20 ${isLight ? 'bg-white/70 border-zinc-200' : 'bg-[#121214]/50 border-zinc-800'}`}>
           <div className="flex items-center gap-2">
-            <div className={`text-[11px] md:text-xs px-3 py-1 rounded-full text-lime-500 font-medium flex items-center gap-1.5 border truncate max-w-[220px] md:max-w-none ${isLight ? 'bg-zinc-100 border-zinc-300' : 'bg-zinc-800/60 border-zinc-700/50'}`}>
+            <div className={`text-[11px] md:text-xs px-3 py-1 rounded-full text-lime-500 font-medium flex items-center gap-1.5 border truncate max-w-[200px] md:max-w-none ${isLight ? 'bg-zinc-100 border-zinc-300' : 'bg-zinc-800/60 border-zinc-700/50'}`}>
               <Flame size={14} className="text-lime-500 shrink-0" />
               <span className="truncate">Shared Financial Database</span>
             </div>
@@ -324,7 +310,7 @@ export default function DuitkuDashboard() {
             <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className={`p-2 rounded-full border transition-all cursor-pointer ${isLight ? 'bg-zinc-100 border-zinc-300 text-zinc-700 hover:bg-zinc-200' : 'bg-zinc-900 border-zinc-800 text-amber-400 hover:bg-zinc-800'}`}>
               {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
             </button>
-            <button onClick={() => setIsModalOpen(true)} className="hidden md:flex bg-lime-400 hover:bg-lime-300 text-zinc-950 font-semibold text-xs px-4 py-2 rounded-full items-center gap-1.5 transition-all shadow-md shadow-lime-400/10 cursor-pointer">
+            <button onClick={() => setIsModalOpen(true)} className="hidden md:flex bg-lime-400 hover:bg-lime-300 text-zinc-950 font-semibold text-xs px-4 py-2 rounded-full items-center gap-1.5 transition-all shadow-md cursor-pointer">
               <Plus size={14} /> <span>Transaksi Baru</span>
             </button>
           </div>
@@ -334,151 +320,109 @@ export default function DuitkuDashboard() {
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">Dashboard & Riwayat 📋</h1>
+                <h1 className="text-xl md:text-2xl font-bold tracking-tight">Dashboard & Riwayat 📋</h1>
                 <p className={`text-xs mt-0.5 ${textMuted}`}>Kelola dan pantau seluruh histori transaksi bersama.</p>
               </div>
+
+              {/* 2 KOTAK BESAR: PEMASUKAN DAN PENGELUARAN */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                {/* Kotak Besar Pemasukan */}
+                <div className={`border rounded-2xl p-5 flex flex-col justify-between ${bgCard}`}>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className={`text-xs uppercase font-semibold tracking-wider ${textMuted}`}>Total Pemasukan</span>
+                      <h2 className="text-2xl font-black text-lime-400 mt-1">Rp {totalIncome.toLocaleString('id-ID')}</h2>
+                    </div>
+                    <div className="bg-lime-400/10 text-lime-400 p-2.5 rounded-xl">
+                      <ArrowDownLeft size={20} />
+                    </div>
+                  </div>
+                  <div className={`mt-4 pt-3 border-t text-xs flex justify-between ${borderColor}`}>
+                    <span className={textMuted}>Saldo Bersih Saat Ini:</span>
+                    <span className="font-bold">Rp {netBalance.toLocaleString('id-ID')}</span>
+                  </div>
+                </div>
+
+                {/* Kotak Besar Pengeluaran */}
+                <div className={`border rounded-2xl p-5 flex flex-col justify-between ${bgCard}`}>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className={`text-xs uppercase font-semibold tracking-wider ${textMuted}`}>Total Pengeluaran</span>
+                      <h2 className="text-2xl font-black text-rose-500 mt-1">Rp {totalExpense.toLocaleString('id-ID')}</h2>
+                    </div>
+                    <div className="bg-rose-500/10 text-rose-500 p-2.5 rounded-xl">
+                      <ArrowUpRight size={20} />
+                    </div>
+                  </div>
+                  <div className={`mt-4 pt-3 border-t text-xs flex justify-between items-center ${borderColor}`}>
+                    <span className={textMuted}>Status Batas Aman:</span>
+                    <span className={`font-bold ${totalExpense > expenseLimit ? 'text-rose-500' : 'text-lime-400'}`}>
+                      {totalExpense > expenseLimit ? '⚠️ Over Limit' : '✨ Aman Terkendali'}
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+
               <TransactionHistory />
             </div>
           )}
 
           {activeTab === 'analitik' && (
-            <div className="space-y-6">
+            <div className="space-y-6 max-w-4xl mx-auto">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                  Cek Jalur Duit Kamu 📊
-                </h1>
-                <p className={`text-xs mt-0.5 ${textMuted}`}>— No Judgement, Just Facts (Data Database Supabase)</p>
+                <h1 className="text-xl md:text-2xl font-bold tracking-tight">Analisis Keuangan 📊</h1>
+                <p className={`text-xs mt-0.5 ${textMuted}`}>Ringkasan data penting langsung dari database.</p>
               </div>
 
-              {/* ARUS KAS */}
-              <div className={`border rounded-2xl p-4 md:p-6 space-y-4 ${bgCard}`}>
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-                  <div>
-                    <span className={`text-xs uppercase tracking-wider font-medium ${textMuted}`}>Analisis Tren Keuangan</span>
-                    <h2 className="text-base font-bold">Arus Kas Database (Tren Masuk vs Keluar)</h2>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3 text-xs">
-                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-lime-400"></span> Masuk: Rp {totalIncome.toLocaleString('id-ID')}</span>
-                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Keluar: Rp {totalExpense.toLocaleString('id-ID')}</span>
-                  </div>
+              {/* Pengeluaran Paling Tinggi (Paling Boncos) */}
+              <div className={`border rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 ${bgCard}`}>
+                <div className="space-y-2 text-center md:text-left">
+                  <span className={`text-xs uppercase font-semibold tracking-wider text-rose-500`}>⚠️ Pengeluaran Paling Tinggi (Tertinggi)</span>
+                  <h3 className="text-xl font-black">{highestExpenseItem.title}</h3>
+                  <p className={`text-xs ${textMuted}`}>Tanggal: {highestExpenseItem.date}</p>
                 </div>
-
-                <div className={`h-48 md:h-52 flex items-end justify-around gap-2 md:gap-4 px-2 md:px-4 pt-8 border-b pb-2 ${borderColor}`}>
-                  {['T1', 'T2', 'T3', 'T4', 'Terbaru'].map((label, idx) => {
-                    const sampleIn = totalIncome > 0 ? (idx % 2 === 0 ? totalIncome * 0.4 : totalIncome * 0.6) : 10
-                    const sampleEx = totalExpense > 0 ? (idx % 2 !== 0 ? totalExpense * 0.4 : totalExpense * 0.5) : 10
-                    return (
-                      <div key={idx} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
-                        <div className="w-full flex items-end justify-center gap-1 md:gap-2 h-full">
-                          <div className="w-2/5 bg-lime-400 rounded-t-md transition-all group-hover:bg-lime-300" style={{ height: `${Math.min(100, (sampleIn / (totalIncome || 1)) * 100)}%` }}></div>
-                          <div className="w-2/5 bg-rose-500 rounded-t-md transition-all group-hover:bg-rose-400" style={{ height: `${Math.min(100, (sampleEx / (totalExpense || 1)) * 100)}%` }}></div>
-                        </div>
-                        <span className={`text-[10px] font-medium ${textMuted}`}>{label}</span>
-                      </div>
-                    )
-                  })}
-                </div>
-
-                <div className={`flex flex-col md:flex-row items-start md:items-center justify-between text-xs gap-1 ${textMuted}`}>
-                  <span>📈 Saldo Bersih: <strong className="text-lime-500">Rp {netBalance.toLocaleString('id-ID')}</strong></span>
-                  <span>Total {transactions.length} Item Tercatat</span>
+                <div className="bg-rose-500/10 border border-rose-500/30 px-6 py-4 rounded-2xl text-center">
+                  <span className="text-[10px] text-zinc-400 block uppercase">Nominal</span>
+                  <span className="text-xl font-black text-rose-500">Rp {highestExpenseItem.amount.toLocaleString('id-ID')}</span>
                 </div>
               </div>
 
-              {/* KEBOCORAN DANA */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className={`lg:col-span-2 border rounded-2xl p-4 md:p-6 flex flex-col justify-between ${bgCard}`}>
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <span className={`text-xs uppercase tracking-wider font-medium ${textMuted}`}>Kebocoran Dana</span>
-                        <h3 className="text-base font-bold">Grafik Proporsi Kategori Paling Boncos</h3>
-                      </div>
-                      <span className="bg-rose-500/10 text-rose-500 border border-rose-500/20 text-[10px] font-semibold px-2 py-0.5 rounded-full">Real-time</span>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center my-4">
-                      <div className="flex items-center justify-center">
-                        <div className="w-32 h-32 md:w-36 md:h-36 rounded-full border-8 border-rose-500 border-t-lime-400 border-r-amber-400 flex items-center justify-center shadow-inner relative">
-                          <div className="text-center">
-                            <span className={`text-[10px] block ${textMuted}`}>Total Keluar</span>
-                            <span className="font-bold text-[11px] md:text-xs">Rp {totalExpense.toLocaleString('id-ID')}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-3 text-xs">
-                        {sortedCategories.length === 0 ? (
-                          <div className={textMuted}>Belum ada pengeluaran tercatat.</div>
-                        ) : (
-                          sortedCategories.map(([cat, amount], idx) => {
-                            const percent = totalExpense > 0 ? ((Number(amount) / totalExpense) * 100).toFixed(1) : 0
-                            return (
-                              <div key={idx} className="space-y-1">
-                                <div className="flex justify-between font-medium">
-                                  <span className="truncate max-w-[140px]">{cat}</span>
-                                  <span className="text-rose-500 font-bold">{percent}%</span>
-                                </div>
-                                <div className={`w-full h-1.5 rounded-full overflow-hidden ${isLight ? 'bg-zinc-200' : 'bg-zinc-800'}`}>
-                                  <div className={`h-full ${idx === 0 ? 'bg-rose-500' : idx === 1 ? 'bg-amber-400' : 'bg-indigo-500'}`} style={{ width: `${percent}%` }}></div>
-                                </div>
-                              </div>
-                            )
-                          })
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className={`mt-4 p-3 rounded-xl border text-xs ${bgSubCard}`}>
-                    <p>💡 <strong className="text-rose-500">Analisis Boncos:</strong> Pengeluaran terbesar di kategori <strong className="text-zinc-100">{sortedCategories.length > 0 ? sortedCategories[0][0] : '-'}</strong>.</p>
-                  </div>
+              {/* Batas Aman Arus Kas */}
+              <div className={`border rounded-2xl p-5 space-y-3 ${bgCard}`}>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-bold flex items-center gap-1.5"><ShieldCheck size={16} className="text-lime-400" /> Batas Aman Pengeluaran</span>
+                  <span className="text-lime-400 font-mono">Limit: Rp {expenseLimit.toLocaleString('id-ID')}</span>
                 </div>
-
-                <div className={`border rounded-2xl p-4 md:p-6 flex flex-col justify-between ${bgCard}`}>
-                  <div>
-                    <span className={`text-xs uppercase tracking-wider font-medium ${textMuted}`}>Score Card</span>
-                    <h3 className="text-lg font-bold mt-1">Status Keuangan</h3>
-                    <div className={`border rounded-xl p-4 my-4 ${bgSubCard}`}>
-                      <h4 className="text-sm font-semibold text-lime-500 mb-1">{netBalance >= 0 ? 'Sultan Terkendali' : 'Wajib Rem'}</h4>
-                      <p className={`text-xs leading-relaxed ${textMuted}`}>
-                        {netBalance >= 0 ? 'Arus kas masuk membackup pengeluaran dengan sangat baik.' : 'Pengeluaran melampaui batas aman pemasukan saat ini.'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className={`text-[11px] ${textMuted}`}>Sinkronisasi otomatis dengan database bersama.</div>
+                <div className="w-full bg-zinc-800 h-2.5 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full ${totalExpense > expenseLimit ? 'bg-rose-500' : 'bg-lime-400'}`} 
+                    style={{ width: `${Math.min(100, (totalExpense / (expenseLimit || 1)) * 100)}%` }}
+                  ></div>
                 </div>
+                <p className={`text-[11px] ${textMuted}`}>
+                  {totalExpense > expenseLimit ? '⚠️ Pengeluaran sudah melampaui batas aman yang diatur di menu Pengaturan!' : '✨ Pengeluaran masih dalam batas aman.'}
+                </p>
               </div>
 
-              {/* MOOD TRACKER */}
-              <div className={`border rounded-2xl p-4 md:p-6 space-y-4 ${bgCard}`}>
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-                  <div>
-                    <h3 className="text-base font-bold flex items-center gap-2">
-                      <Brain size={18} className="text-lime-500" /> Financial Mood Tracker
-                    </h3>
-                    <p className={`text-xs mt-0.5 ${textMuted}`}>Analisis pengeluaran berdasarkan suasana hati saat bertransaksi.</p>
-                  </div>
-                  <div className={`border px-3 py-1.5 rounded-xl text-xs flex items-center gap-2 ${inputBg}`}>
-                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-                    Mood Teratas: <strong className="text-amber-400">{sortedMoods.length > 0 ? sortedMoods[0][0] : 'Belum ada data'}</strong>
-                  </div>
-                </div>
-
+              {/* Financial Mood Tracker */}
+              <div className={`border rounded-2xl p-6 space-y-4 ${bgCard}`}>
+                <h3 className="text-base font-bold flex items-center gap-2">
+                  <Brain size={18} className="text-lime-400" /> Financial Mood Tracker Analisis
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {sortedMoods.length === 0 ? (
-                    <div className={`col-span-3 text-center py-8 text-xs ${textMuted}`}>Belum ada data transaksi dengan mood tercatat.</div>
+                    <div className={`col-span-3 text-center py-6 text-xs ${textMuted}`}>Belum ada data emosi/mood tercatat.</div>
                   ) : (
                     sortedMoods.slice(0, 3).map(([moodName, stats], idx) => (
                       <div key={idx} className={`border rounded-xl p-4 flex flex-col justify-between ${bgSubCard}`}>
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-bold text-lime-500">{moodName}</span>
-                            <span className="text-[10px] bg-lime-400/10 text-lime-500 px-2 py-0.5 rounded font-medium">{stats.count} Transaksi</span>
-                          </div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-bold text-lime-400">{moodName}</span>
+                          <span className="text-[10px] bg-lime-400/10 text-lime-400 px-2 py-0.5 rounded font-medium">{stats.count}x</span>
                         </div>
-                        <div className={`mt-4 pt-3 border-t flex items-center justify-between text-xs ${borderColor}`}>
-                          <span className={textMuted}>Total Keluar:</span>
+                        <div className={`pt-2 border-t flex justify-between text-xs ${borderColor}`}>
+                          <span className={textMuted}>Total:</span>
                           <span className="font-bold text-rose-500">Rp {stats.total.toLocaleString('id-ID')}</span>
                         </div>
                       </div>
@@ -486,12 +430,13 @@ export default function DuitkuDashboard() {
                   )}
                 </div>
               </div>
+
             </div>
           )}
 
           {activeTab === 'report' && (
             <div className="space-y-6">
-              <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2"><FileText className="text-lime-500" /> Report Detail Transaksi 📑</h1>
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight flex items-center gap-2"><FileText className="text-lime-500" /> Report Detail Transaksi 📑</h1>
               <div className={`border rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 text-xs ${bgCard}`}>
                 <input type="text" placeholder="Cari judul..." value={reportSearch} onChange={(e) => setReportSearch(e.target.value)} className={`border rounded-xl px-3 py-2 w-full md:w-64 ${inputBg}`} />
                 <select value={selectedUserFilter} onChange={(e) => setSelectedUserFilter(e.target.value)} className={`border px-3 py-2 rounded-xl w-full md:w-auto ${inputBg}`}>
@@ -516,8 +461,7 @@ export default function DuitkuDashboard() {
           {activeTab === 'kantong' && (
             <div className="space-y-6 max-w-4xl mx-auto">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">Kantong Nabung Bersama 💰</h1>
-                <p className={`text-xs mt-0.5 ${textMuted}`}>Buat target tabungan bersama.</p>
+                <h1 className="text-xl md:text-2xl font-bold tracking-tight">Kantong Nabung Bersama 💰</h1>
               </div>
               <form onSubmit={handleAddPocket} className={`border rounded-2xl p-4 md:p-6 space-y-4 ${bgCard}`}>
                 <h3 className="text-sm font-bold text-lime-500 flex items-center gap-2"><Target size={16} /> Tambah Kantong Baru</h3>
@@ -550,7 +494,7 @@ export default function DuitkuDashboard() {
           {activeTab === 'wishlist' && (
             <div className="space-y-6 max-w-4xl mx-auto">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">Wishlist Impian ✨</h1>
+                <h1 className="text-xl md:text-2xl font-bold tracking-tight">Wishlist Impian ✨</h1>
               </div>
               <form onSubmit={handleAddWishlist} className={`border rounded-2xl p-4 md:p-6 space-y-4 ${bgCard}`}>
                 <h3 className="text-sm font-bold text-lime-500">Tambah Barang Impian</h3>
@@ -577,17 +521,12 @@ export default function DuitkuDashboard() {
           {activeTab === 'budgeting' && (
             <div className="space-y-6 max-w-4xl mx-auto">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">Budgeting Bulanan 🎯</h1>
+                <h1 className="text-xl md:text-2xl font-bold tracking-tight">Budgeting Bulanan 🎯</h1>
               </div>
               <form onSubmit={handleAddBudget} className={`border rounded-2xl p-4 md:p-6 space-y-4 ${bgCard}`}>
                 <h3 className="text-sm font-bold text-lime-500">Atur Limit Budget</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                  <select value={newBudgetCat} onChange={(e) => setNewBudgetCat(e.target.value)} className={`border rounded-xl px-3.5 py-2.5 ${inputBg}`}>
-                    <option value="Kuliner / Gofood">Kuliner / Gofood</option>
-                    <option value="E-Commerce / Gadget">E-Commerce / Gadget</option>
-                    <option value="Hangout & Party">Hangout & Party</option>
-                    <option value="Transport">Transport</option>
-                  </select>
+                  <input type="text" required placeholder="Kategori / Keperluan" value={newBudgetCat} onChange={(e) => setNewBudgetCat(e.target.value)} className={`border rounded-xl px-3.5 py-2.5 ${inputBg}`} />
                   <input type="text" required placeholder="Limit Maksimal" value={newBudgetLimit} onChange={(e) => setNewBudgetLimit(e.target.value.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.'))} className={`border rounded-xl px-3.5 py-2.5 ${inputBg}`} />
                 </div>
                 <button type="submit" className="w-full md:w-auto bg-lime-400 text-zinc-950 font-bold px-5 py-2.5 rounded-xl text-xs cursor-pointer">Simpan Budget</button>
@@ -608,7 +547,9 @@ export default function DuitkuDashboard() {
 
           {activeTab === 'settings' && (
             <div className="space-y-6 max-w-3xl mx-auto">
-              <h1 className="text-2xl font-bold tracking-tight">Pengaturan Aplikasi ⚙️</h1>
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight">Pengaturan Aplikasi ⚙️</h1>
+              
+              {/* Tema */}
               <div className={`border rounded-2xl p-6 space-y-4 ${bgCard}`}>
                 <h3 className="text-sm font-bold text-lime-500">Preferensi Tampilan Tema</h3>
                 <div className="flex gap-2 text-xs">
@@ -617,15 +558,36 @@ export default function DuitkuDashboard() {
                 </div>
               </div>
 
-              {/* Tombol Logout di Menu Pengaturan */}
+              {/* Setting Batas Aman Pengeluaran */}
+              <form onSubmit={handleSaveLimit} className={`border rounded-2xl p-6 space-y-4 ${bgCard}`}>
+                <h3 className="text-sm font-bold text-lime-500 flex items-center gap-2"><ShieldCheck size={16} /> Atur Batas Aman Pengeluaran</h3>
+                <p className={`text-xs ${textMuted}`}>Tentukan batas maksimal pengeluaran bulanan agar sistem memberikan peringatan jika melebihi limit.</p>
+                <div className="text-xs space-y-1">
+                  <label className={`block font-medium ${textMuted}`}>Maksimal Batas Pengeluaran (Rp)</label>
+                  <input 
+                    type="text" 
+                    value={inputLimit} 
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\D/g, '')
+                      setInputLimit(raw.replace(/\B(?=(\d{3})+(?!\d))/g, '.'))
+                    }} 
+                    className={`w-full border rounded-xl px-3.5 py-2.5 font-mono ${inputBg}`}
+                  />
+                </div>
+                <button type="submit" className="w-full md:w-auto bg-lime-400 text-zinc-950 font-bold px-5 py-2.5 rounded-xl text-xs cursor-pointer">
+                  Simpan Batas Limit 💾
+                </button>
+              </form>
+
+              {/* Keluar */}
               <div className={`border rounded-2xl p-6 space-y-4 ${bgCard}`}>
                 <h3 className="text-sm font-bold text-rose-500 flex items-center gap-2"><LogOut size={16} /> Keluar dari Akun</h3>
-                <p className={`text-xs ${textMuted}`}>Akhiri sesi login aktif di perangkat ini.</p>
-                <button onClick={handleLogout} className="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-500 font-semibold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer flex items-center gap-2">
+                <button onClick={handleLogout} className="w-full md:w-auto bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-500 font-semibold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2">
                   <LogOut size={14} /> Keluar Akun Sekarang
                 </button>
               </div>
 
+              {/* Reset Data */}
               <div className="border border-rose-500/30 rounded-2xl p-6 bg-rose-500/5 space-y-3">
                 <h3 className="text-sm font-bold text-rose-500">Zona Manajemen Data Bersama</h3>
                 <button onClick={handleResetData} className="w-full md:w-auto bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-500 font-semibold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer">Hapus & Reset Semua Data Transaksi</button>
