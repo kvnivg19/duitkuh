@@ -30,10 +30,21 @@ export default function TransactionHistory() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Yakin ingin menghapus transaksi ini?')) return
-    const { error } = await supabase.from('transactions').delete().eq('id', id)
+    const { error } = await (supabase.from('transactions') as any).delete().eq('id', id)
     if (!error) {
       fetchHistory()
     }
+  }
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '-'
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) return dateString
+    return date.toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    })
   }
 
   const filteredTransactions = transactions.filter(item => {
@@ -48,7 +59,7 @@ export default function TransactionHistory() {
       <div className="bg-[#121214] border border-zinc-800/80 rounded-2xl p-4 md:p-6 text-zinc-100">
         <div className="mb-6">
           <h2 className="text-base md:text-lg font-bold">Riwayat Bersama Duitku 📜</h2>
-          <p className="text-xs text-zinc-400 mt-0.5">Semua pemasukan & pengeluaran dari user yang terhubung terekam di sini.</p>
+          <p className="text-xs text-zinc-400 mt-0.5">Semua pemasukan & pengeluaran dari user yang terekam di sini.</p>
         </div>
 
         <div className="flex flex-col md:flex-row items-center gap-3 mb-6 text-xs">
@@ -64,9 +75,9 @@ export default function TransactionHistory() {
           </div>
 
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-1 flex w-full md:w-auto justify-center">
-            <button onClick={() => setFilterType('all')} className={`px-3 py-1 rounded-lg ${filterType === 'all' ? 'bg-lime-400 text-zinc-950 font-semibold' : 'text-zinc-400'}`}>Semua</button>
-            <button onClick={() => setFilterType('income')} className={`px-3 py-1 rounded-lg ${filterType === 'income' ? 'bg-lime-400 text-zinc-950 font-semibold' : 'text-zinc-400'}`}>Masuk</button>
-            <button onClick={() => setFilterType('expense')} className={`px-3 py-1 rounded-lg ${filterType === 'expense' ? 'bg-rose-500 text-white font-semibold' : 'text-zinc-400'}`}>Keluar</button>
+            <button onClick={() => setFilterType('all')} className={`px-3 py-1 rounded-lg cursor-pointer ${filterType === 'all' ? 'bg-lime-400 text-zinc-950 font-semibold' : 'text-zinc-400'}`}>Semua</button>
+            <button onClick={() => setFilterType('income')} className={`px-3 py-1 rounded-lg cursor-pointer ${filterType === 'income' ? 'bg-lime-400 text-zinc-950 font-semibold' : 'text-zinc-400'}`}>Masuk</button>
+            <button onClick={() => setFilterType('expense')} className={`px-3 py-1 rounded-lg cursor-pointer ${filterType === 'expense' ? 'bg-rose-500 text-white font-semibold' : 'text-zinc-400'}`}>Keluar</button>
           </div>
         </div>
 
@@ -87,7 +98,7 @@ export default function TransactionHistory() {
                     <h4 className="font-semibold text-sm text-zinc-200">{item.title}</h4>
                     <div className="flex flex-wrap items-center gap-2 text-[11px] text-zinc-400 mt-0.5">
                       <span className="bg-zinc-800 px-2 py-0.5 rounded text-zinc-300">{item.category}</span>
-                      <span>• {item.date}</span>
+                      <span>• {formatDate(item.date)}</span>
                       <span className="flex items-center gap-1 text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded font-mono">
                         <User size={10} /> {item.user_id === currentUser?.id ? 'Anda' : 'Partner'}
                       </span>
