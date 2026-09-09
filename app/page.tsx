@@ -39,7 +39,6 @@ export default function DuitkuDashboard() {
   const [userMap, setUserMap] = useState<{ [key: string]: string }>({})
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
 
-  // Setting Batas Aman Pengeluaran
   const [expenseLimit, setExpenseLimit] = useState<number>(2000000)
   const [inputLimit, setInputLimit] = useState('2.000.000')
 
@@ -68,7 +67,7 @@ export default function DuitkuDashboard() {
       const newMap: { [key: string]: string } = {}
       txData.forEach((item: any) => {
         if (item.user_id) {
-          newMap[item.user_id] = item.user_id === user?.id ? (user?.email || item.user_id) : `User (${item.user_id.slice(0, 6)}...)`
+          newMap[item.user_id] = item.user_id === user?.id ? (user.email || item.user_id) : `User (${item.user_id.slice(0, 6)}...)`
         }
       })
       setUserMap(newMap)
@@ -92,7 +91,6 @@ export default function DuitkuDashboard() {
     const { data: bData } = await supabase.from('budgets').select('*')
     if (bData) setBudgets(bData)
 
-    // Load saved limit
     const savedLimit = localStorage.getItem('duitku_limit')
     if (savedLimit) {
       setExpenseLimit(Number(savedLimit))
@@ -132,7 +130,7 @@ export default function DuitkuDashboard() {
     e.preventDefault()
     if (!newPocketTitle || !newPocketTarget) return
     const { data: { user } } = await supabase.auth.getUser()
-    await (supabase.from('pockets') as any).insert([{
+    await supabase.from('pockets').insert([{
       title: newPocketTitle,
       target_amount: parseFloat(newPocketTarget.replace(/\./g, '')),
       current_amount: 0,
@@ -152,7 +150,7 @@ export default function DuitkuDashboard() {
     e.preventDefault()
     if (!newWishTitle || !newWishPrice) return
     const { data: { user } } = await supabase.auth.getUser()
-    await (supabase.from('wishlists') as any).insert([{
+    await supabase.from('wishlists').insert([{
       title: newWishTitle,
       price: parseFloat(newWishPrice.replace(/\./g, '')),
       user_id: user?.id ?? ''
@@ -171,7 +169,7 @@ export default function DuitkuDashboard() {
     e.preventDefault()
     if (!newBudgetLimit) return
     const { data: { user } } = await supabase.auth.getUser()
-    await (supabase.from('budgets') as any).insert([{
+    await supabase.from('budgets').insert([{
       category: newBudgetCat,
       limit_amount: parseFloat(newBudgetLimit.replace(/\./g, '')),
       user_id: user?.id ?? ''
@@ -185,14 +183,24 @@ export default function DuitkuDashboard() {
     fetchData()
   }
 
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '-'
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) return dateString
+    return date.toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    })
+  }
+
   const netBalance = totalIncome - totalExpense
 
-  // Cari pengeluaran paling tinggi (highest single expense item)
   let highestExpenseItem = { title: 'Belum ada data', amount: 0, date: '-' }
   transactions.filter(item => item.type === 'expense').forEach(item => {
     const amt = Number(item.amount)
     if (amt > highestExpenseItem.amount) {
-      highestExpenseItem = { title: item.title, amount: amt, date: item.date }
+      highestExpenseItem = { title: item.title, amount: amt, date: formatDate(item.date) }
     }
   })
 
@@ -268,7 +276,12 @@ export default function DuitkuDashboard() {
           <button onClick={fetchData} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-lime-500 hover:bg-lime-400/10 transition-colors cursor-pointer text-left font-medium">
             <RefreshCw size={18} /> <span>Muat Ulang Data</span>
           </button>
-          <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer text-left font-medium">
+          <button 
+            onClick={() => {
+              if (confirm('Yakin mau keluar dari akun?')) handleLogout()
+            }} 
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-amber-500 hover:bg-amber-500/10 transition-colors cursor-pointer text-left font-medium"
+          >
             <LogOut size={18} /> <span>Keluar Akun</span>
           </button>
         </div>
@@ -291,7 +304,12 @@ export default function DuitkuDashboard() {
         <button onClick={() => setActiveTab('settings')} className={`p-1 flex flex-col items-center text-[10px] ${activeTab === 'settings' ? 'text-lime-500 font-bold' : textMuted}`}>
           <Settings size={16} /> <span>Set</span>
         </button>
-        <button onClick={handleLogout} className="p-1 flex flex-col items-center text-[10px] text-rose-500 font-medium">
+        <button 
+          onClick={() => {
+            if (confirm('Yakin mau keluar dari akun?')) handleLogout()
+          }} 
+          className="p-1 flex flex-col items-center text-[10px] text-amber-500 font-medium"
+        >
           <LogOut size={16} /> <span>Keluar</span>
         </button>
       </div>
@@ -326,8 +344,6 @@ export default function DuitkuDashboard() {
 
               {/* 2 KOTAK BESAR: PEMASUKAN DAN PENGELUARAN */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
-                {/* Kotak Besar Pemasukan */}
                 <div className={`border rounded-2xl p-5 flex flex-col justify-between ${bgCard}`}>
                   <div className="flex justify-between items-start">
                     <div>
@@ -344,7 +360,6 @@ export default function DuitkuDashboard() {
                   </div>
                 </div>
 
-                {/* Kotak Besar Pengeluaran */}
                 <div className={`border rounded-2xl p-5 flex flex-col justify-between ${bgCard}`}>
                   <div className="flex justify-between items-start">
                     <div>
@@ -362,7 +377,6 @@ export default function DuitkuDashboard() {
                     </span>
                   </div>
                 </div>
-
               </div>
 
               <TransactionHistory />
@@ -376,7 +390,7 @@ export default function DuitkuDashboard() {
                 <p className={`text-xs mt-0.5 ${textMuted}`}>Ringkasan data penting langsung dari database.</p>
               </div>
 
-              {/* Pengeluaran Paling Tinggi (Paling Boncos) */}
+              {/* Pengeluaran Paling Tinggi */}
               <div className={`border rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 ${bgCard}`}>
                 <div className="space-y-2 text-center md:text-left">
                   <span className={`text-xs uppercase font-semibold tracking-wider text-rose-500`}>⚠️ Pengeluaran Paling Tinggi (Tertinggi)</span>
@@ -430,7 +444,6 @@ export default function DuitkuDashboard() {
                   )}
                 </div>
               </div>
-
             </div>
           )}
 
@@ -449,7 +462,7 @@ export default function DuitkuDashboard() {
                   <div key={item.id} className={`p-4 border-b flex flex-col md:flex-row md:items-center justify-between gap-2 text-xs ${borderColor}`}>
                     <div>
                       <h4 className="font-semibold text-sm">{item.title}</h4>
-                      <span className={textMuted}>{item.category} • {item.date} • <strong className="text-indigo-500">{userMap[item.user_id]}</strong></span>
+                      <span className={textMuted}>{item.category} • {formatDate(item.date)} • <strong className="text-indigo-500">{userMap[item.user_id]}</strong></span>
                     </div>
                     <span className={`font-bold text-sm ${item.type === 'income' ? 'text-lime-500' : ''}`}>Rp {Number(item.amount).toLocaleString('id-ID')}</span>
                   </div>
@@ -579,18 +592,32 @@ export default function DuitkuDashboard() {
                 </button>
               </form>
 
-              {/* Keluar */}
+              {/* Tombol Keluar */}
               <div className={`border rounded-2xl p-6 space-y-4 ${bgCard}`}>
-                <h3 className="text-sm font-bold text-rose-500 flex items-center gap-2"><LogOut size={16} /> Keluar dari Akun</h3>
-                <button onClick={handleLogout} className="w-full md:w-auto bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-500 font-semibold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2">
+                <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2"><LogOut size={16} /> Keluar dari Akun</h3>
+                <p className={`text-xs ${textMuted}`}>Akhiri sesi login aktif di perangkat ini.</p>
+                <button 
+                  onClick={() => {
+                    if (confirm('Yakin mau keluar dari akun?')) {
+                      handleLogout()
+                    }
+                  }} 
+                  className="w-full md:w-auto bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 font-semibold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2"
+                >
                   <LogOut size={14} /> Keluar Akun Sekarang
                 </button>
               </div>
 
-              {/* Reset Data */}
+              {/* Tombol Reset Data */}
               <div className="border border-rose-500/30 rounded-2xl p-6 bg-rose-500/5 space-y-3">
                 <h3 className="text-sm font-bold text-rose-500">Zona Manajemen Data Bersama</h3>
-                <button onClick={handleResetData} className="w-full md:w-auto bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-500 font-semibold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer">Hapus & Reset Semua Data Transaksi</button>
+                <p className={`text-xs ${textMuted}`}>Hapus seluruh riwayat transaksi yang tersimpan di database bersama.</p>
+                <button 
+                  onClick={handleResetData} 
+                  className="w-full md:w-auto bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-500 font-semibold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer"
+                >
+                  Hapus & Reset Semua Data Transaksi 🗑️
+                </button>
               </div>
             </div>
           )}
