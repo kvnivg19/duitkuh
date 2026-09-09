@@ -277,14 +277,7 @@ export default function DuitkuDashboard() {
           <button onClick={fetchData} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-lime-500 hover:bg-lime-400/10 transition-colors cursor-pointer text-left font-medium">
             <RefreshCw size={18} /> <span>Muat Ulang Data</span>
           </button>
-          <button 
-            onClick={() => {
-              if (confirm('Yakin mau keluar dari akun?')) handleLogout()
-            }} 
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-amber-500 hover:bg-amber-500/10 transition-colors cursor-pointer text-left font-medium"
-          >
-            <LogOut size={18} /> <span>Keluar Akun</span>
-          </button>
+  
         </div>
       </aside>
 
